@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# SQLite database files
+db/*.sqlite
+
+# Logs
+logs/
+*.log
+
+# dotenv environment files
+.env
+.env.local
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Docker files (if dynamically created)
+docker/*.log
+
+# Editor-specific
+.vscode/
+.idea/
+
+# Build artifacts (if you use any)
+dist/
+build/

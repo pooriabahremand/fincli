@@ -1,0 +1,74 @@
+[
+  {
+    "name": "house rent",
+    "priority": 1,
+    "tags": [
+      "house"
+    ]
+  },
+  {
+    "name": "loan installment",
+    "priority": 1,
+    "tags": [
+      "house"
+    ]
+  },
+  {
+    "name": "war equipment",
+    "priority": 1,
+    "tags": [
+      "health",
+      "war equipment"
+    ]
+  },
+  {
+    "name": "household expenses",
+    "priority": 1,
+    "tags": [
+      "house"
+    ]
+  },
+  {
+    "name": "house charge",
+    "priority": 2,
+    "tags": [
+      "house"
+    ]
+  },
+  {
+    "name": "mobile rent",
+    "priority": 2,
+    "tags": [
+      "infrastructure"
+    ]
+  },
+  {
+    "name": "internet fee",
+    "priority": 2,
+    "tags": [
+      "infrastructure"
+    ]
+  },
+  {
+    "name": "gpt",
+    "priority": 3,
+    "tags": [
+      "infrastructure"
+    ]
+  },
+  {
+    "name": "tapsi installment",
+    "priority": 4,
+    "tags": [
+      "transportation"
+    ]
+  },
+  {
+    "name": "New Gadget",
+    "priority": 5,
+    "tags": [
+      "tech",
+      "fun"
+    ]
+  }
+]
