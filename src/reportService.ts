@@ -1,11 +1,11 @@
-import { promises as fs } from 'fs';
-import { MonthlyAccounting, ExpenseWithAmount } from './types.js';
+import { promises as fs } from "fs";
+import { MonthlyAccounting, ExpenseWithAmount } from "./types";
 
 /**
  * Service for managing accounting reports
  */
 export class ReportService {
-  private readonly reportsDir = './reports';
+  private readonly reportsDir = "./reports";
 
   /**
    * Generate and save a monthly accounting report
@@ -13,10 +13,12 @@ export class ReportService {
    */
   async generateReport(accounting: MonthlyAccounting): Promise<void> {
     const reportPath = `${this.reportsDir}/${accounting.filename}.txt`;
-    
+
     // Separate expenses by priority groups
-    const criticalExpenses = accounting.expenses.filter(e => e.priority <= 2);
-    const discretionaryExpenses = accounting.expenses.filter(e => e.priority >= 3);
+    const criticalExpenses = accounting.expenses.filter((e) => e.priority <= 2);
+    const discretionaryExpenses = accounting.expenses.filter(
+      (e) => e.priority >= 3
+    );
 
     const reportContent = this.formatReport(
       accounting.filename,
@@ -27,10 +29,10 @@ export class ReportService {
     );
 
     try {
-      await fs.writeFile(reportPath, reportContent, 'utf-8');
+      await fs.writeFile(reportPath, reportContent, "utf-8");
       console.log(`Report saved to: ${reportPath}`);
     } catch (error) {
-      console.error('Error saving report:', error);
+      console.error("Error saving report:", error);
       throw error;
     }
   }
@@ -78,9 +80,9 @@ export class ReportService {
   async listReports(): Promise<string[]> {
     try {
       const files = await fs.readdir(this.reportsDir);
-      return files.filter(file => file.endsWith('.txt'));
+      return files.filter((file) => file.endsWith(".txt"));
     } catch (error) {
-      console.error('Error listing reports:', error);
+      console.error("Error listing reports:", error);
       return [];
     }
   }
@@ -93,9 +95,9 @@ export class ReportService {
   async readReport(filename: string): Promise<string> {
     try {
       const reportPath = `${this.reportsDir}/${filename}`;
-      return await fs.readFile(reportPath, 'utf-8');
+      return await fs.readFile(reportPath, "utf-8");
     } catch (error) {
-      console.error('Error reading report:', error);
+      console.error("Error reading report:", error);
       throw error;
     }
   }
@@ -108,12 +110,11 @@ export class ReportService {
   async updateReport(filename: string, content: string): Promise<void> {
     try {
       const reportPath = `${this.reportsDir}/${filename}`;
-      await fs.writeFile(reportPath, content, 'utf-8');
+      await fs.writeFile(reportPath, content, "utf-8");
       console.log(`Report updated: ${reportPath}`);
     } catch (error) {
-      console.error('Error updating report:', error);
+      console.error("Error updating report:", error);
       throw error;
     }
   }
 }
-

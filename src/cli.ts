@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import { select, input, confirm } from "@inquirer/prompts";
-import { ExpenseService } from "./expenseService.js";
-import { ReportService } from "./reportService.js";
-import { BudgetCalculator } from "./budgetCalculator.js";
-import { Expense, ExpenseWithAmount, MonthlyAccounting } from "./types.js";
+import { ExpenseService } from "./expenseService";
+import { ReportService } from "./reportService";
+import { BudgetCalculator } from "./budgetCalculator";
+import { Expense, ExpenseWithAmount, MonthlyAccounting } from "./types";
 
 /**
  * Main CLI application class for FinCLI

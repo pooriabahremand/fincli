@@ -7,6 +7,8 @@ db/*.sqlite
 # Logs
 logs/
 *.log
+*.txt
+expenses.json
 
 # dotenv environment files
 .env
@@ -26,3 +28,5 @@ docker/*.log
 # Build artifacts (if you use any)
 dist/
 build/
+
+/reports
