@@ -147,23 +147,26 @@ class FinCLI {
       expensesWithAmounts
     );
 
-    // Get output filename
-    const filename = await input({
-      message: "What should we name the output file?",
+    // Get output filename base (version will be appended automatically)
+    const filenameBase = await input({
+      message: "What should we name the output file? (base, without version)",
       validate: (value) =>
         value.trim().length > 0 ? true : "Please enter a filename",
     });
+    const versionedName = await this.reportService.nextVersionName(
+      filenameBase.trim()
+    );
 
     // Create and save report
     const accounting: MonthlyAccounting = {
-      filename: filename.trim(),
+      filename: versionedName,
       totalBudget,
       expenses: expensesWithAmounts,
       allocation,
     };
 
     await this.reportService.generateReport(accounting);
-    console.log("\n✅ Accounting completed successfully!\n");
+    console.log(`\n✅ Accounting completed successfully as: ${versionedName} (saved in ./reports/reports and ./reports/json)\n`);
   }
 
   /**
@@ -184,30 +187,120 @@ class FinCLI {
       choices: reports.map((report) => ({ name: report, value: report })),
     });
 
-    const content = await this.reportService.readReport(selectedReport);
-    console.log("\n--- Current Report Content ---\n");
-    console.log(content);
-    console.log("\n--- End of Report ---\n");
+    // Load structured accounting (JSON if exists, else parse from text)
+    let accounting = await this.reportService.loadAccounting(selectedReport);
 
-    const editChoice = await select({
-      message: "What would you like to do?",
-      choices: [
-        { name: "Edit expense amounts", value: "edit" },
-        { name: "View only", value: "view" },
-      ],
+    // Recompute allocation to ensure consistency when loaded from legacy text
+    accounting.allocation = this.budgetCalculator.calculateAllocation(
+      accounting.totalBudget,
+      accounting.expenses
+    );
+
+    // Allow changing total budget first
+    const changeBudget = await confirm({
+      message: `Do you want to change the total budget? (current: ${accounting.totalBudget.toLocaleString()} tomans)`,
     });
+    if (changeBudget) {
+      const newBudgetInput = await input({
+        message: "Enter new total budget (in thousands of tomans):",
+        default: String(Math.floor(accounting.totalBudget / 1000)),
+        validate: (value) => {
+          const num = parseInt(value);
+          return !isNaN(num) && num > 0
+            ? true
+            : "Please enter a valid positive number";
+        },
+      });
+      accounting.totalBudget = parseInt(newBudgetInput) * 1000;
+    }
 
-    if (editChoice === "edit") {
-      const newContent = await input({
-        message: "Enter the new content (or press Enter to keep current):",
-        default: content,
+    // Iterate current expenses and allow edits
+    for (let i = 0; i < accounting.expenses.length; i++) {
+      const exp = accounting.expenses[i];
+      const doEdit = await confirm({
+        message: `Edit expense "${exp.name}" (current: ${exp.amount.toLocaleString()} tomans)?`,
+      });
+      if (!doEdit) continue;
+
+      const whatToEdit = await select({
+        message: "What would you like to change?",
+        choices: [
+          { name: "Name", value: "name" },
+          { name: "Amount", value: "amount" },
+          { name: "Both", value: "both" },
+          { name: "Skip", value: "skip" },
+        ],
       });
 
-      if (newContent !== content) {
-        await this.reportService.updateReport(selectedReport, newContent);
-        console.log("\n✅ Report updated successfully!\n");
+      if (whatToEdit === "name" || whatToEdit === "both") {
+        const newName = await input({
+          message: `New name for "${exp.name}":`,
+          default: exp.name,
+        });
+        exp.name = newName.trim();
       }
+
+      if (whatToEdit === "amount" || whatToEdit === "both") {
+        const newAmountInput = await input({
+          message: `New amount for "${exp.name}" (in thousands):`,
+          default: String(Math.floor(exp.amount / 1000)),
+          validate: (value) => {
+            const num = parseInt(value);
+            return !isNaN(num) && num >= 0 ? true : "Enter a valid number";
+          },
+        });
+        exp.amount = parseInt(newAmountInput) * 1000;
+      }
+
+      accounting.expenses[i] = exp;
     }
+
+    // Allow adding new expenses
+    let adding = true;
+    while (adding) {
+      const addNew = await confirm({
+        message: "Do you want to add a new expense?",
+      });
+      if (!addNew) break;
+
+      const name = await input({ message: "Expense name:" });
+      const priorityInput = await input({
+        message: "Priority (1-5):",
+        validate: (value) => {
+          const num = parseInt(value);
+          return !isNaN(num) && num >= 1 && num <= 5
+            ? true
+            : "Enter a number between 1 and 5";
+        },
+      });
+      const amountInput = await input({
+        message: "Amount (in thousands):",
+        validate: (value) => {
+          const num = parseInt(value);
+          return !isNaN(num) && num >= 0 ? true : "Enter a valid number";
+        },
+      });
+
+      accounting.expenses.push({
+        name: name.trim(),
+        priority: parseInt(priorityInput),
+        tags: [],
+        amount: parseInt(amountInput) * 1000,
+      });
+    }
+
+    // Recompute allocation after edits
+    accounting.allocation = this.budgetCalculator.calculateAllocation(
+      accounting.totalBudget,
+      accounting.expenses
+    );
+
+    // Bump version for edited accounting and save as new version
+    accounting.filename = await this.reportService.bumpVersionName(
+      accounting.filename
+    );
+    await this.reportService.saveAccounting(accounting);
+    console.log(`\n✅ Report updated successfully as: ${accounting.filename} (new version)\n`);
   }
 
   /**

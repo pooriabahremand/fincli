@@ -1,66 +1,83 @@
 # FinCLI - Your Personal Finance Manager
 
-FinCLI is a self-contained command-line interface (CLI) application designed to help you manage your monthly finances. Built with Node.js and TypeScript, it provides functionalities to create new accounting records, edit past ones, and understand expense prioritization criteria.
+FinCLI is a self-contained command-line interface (CLI) application to manage monthly finances. It guides you through setting a monthly budget, recording expenses by priority, allocating your budget, and generating versioned reports in both text and JSON formats.
 
 ## Features
 
-- **Interactive Welcome Screen**: Guides you through available actions.
-- **Create New Accounting**: Helps you record your monthly budget and expenses, categorizing them by priority.
-- **Dynamic Expense Input**: Asks about pre-defined expenses and allows adding new ones on the fly.
-- **Budget Allocation**: Automatically allocates your budget into Investments, Savings, and Daily Expenses based on predefined percentages.
-- **Report Generation**: Saves a detailed plain-text report of your monthly accounting.
-- **Edit Past Accountings**: Allows you to view and modify previously generated reports.
-- **Expense Criteria Explanation**: Provides clear definitions for expense priorities (Critical/Essential vs. Discretionary).
+- Interactive welcome screen with clear actions
+- Create new accounting with dynamic expense input (predefined + custom)
+- Automatic budget allocation (Investments 30%, Savings 20%, Daily 50%)
+- Generate reports as plain text and structured JSON
+- Edit past accountings interactively:
+  - Show current budget when changing budget
+  - Show current amount when editing each expense
+  - Rename expenses, change amounts, add new expenses
+  - Recalculate allocation and save as a new version
+- Versioned reports: `name-v1`, `name-v2`, ...
+- Separate storage directories: `./reports/reports` for `.txt` and `./reports/json` for `.json`
+- Clear criteria explanation for expense priorities
 
-## Technical Details
+## Requirements
 
-- **Language**: TypeScript 5+
-- **Runtime**: Node.js
-- **Module System**: ES2022 with `moduleResolution: node16`
-- **Interactive Prompts**: Powered by `@inquirer/prompts`.
-- **Data Persistence**: Uses Node.js built-in `fs/promises` for file operations (no external databases).
-- **Code Structure**: Organized into clear modules under `src/` (e.g., `cli.ts`, `expenseService.ts`, `reportService.ts`, `budgetCalculator.ts`, `types.ts`).
-- **Linting**: Configured with ESLint for code quality and consistency.
-- **Documentation**: Includes JSDoc comments for better code understanding.
+- Node.js (LTS recommended)
 
-## Installation and Usage
+## Installation
 
-To run FinCLI, ensure you have Node.js installed on your system.
+```bash
+git clone <repository-url>
+cd fincli
+npm install
+```
 
-1.  **Clone the repository (or extract the project files):**
+## Running
 
-    ```bash
-    git clone <repository-url>
-    cd fincli
-    ```
+```bash
+npm start
+```
 
-2.  **Install dependencies:**
+This launches the interactive CLI.
 
-    ```bash
-    npm install
-    ```
+## Directory Setup
 
-3.  **Run the application:**
+No manual setup is required. The app will create these directories if they don't exist:
 
-    ```bash
-    npm start
-    ```
+- `./reports/reports` for text reports
+- `./reports/json` for JSON reports
 
-    This will start the interactive CLI. Follow the prompts to manage your finances.
+Base expenses are stored in `./expenses.json`.
 
-4.  **Build the project (optional):**
+## Usage Walkthrough
 
-    ```bash
-    npm run build
-    ```
+### Create a new accounting
 
-    This compiles the TypeScript code into JavaScript in the `dist/` directory.
+- Enter total budget (thousands of tomans). For example, `5000` → `5,000,000 tomans`.
+- For each predefined expense: confirm if it applies, then enter amount (thousands).
+- Add custom expenses if needed (name, priority 1–5, amount).
+- Enter a base filename (without version). The app saves as the next version, e.g. `name-v1`.
+- Outputs:
+  - Text: `./reports/reports/name-v1.txt`
+  - JSON: `./reports/json/name-v1.json`
 
-5.  **Run Linting (optional):**
+### Edit past accountings
 
-    ```bash
-    npm run lint
-    ```
+- Pick a report from the list (.txt files under `./reports/reports`).
+- The app loads structured data (prefers JSON; falls back to parsing text).
+- You can:
+  - Change total budget (prompt shows current amount)
+  - For each expense, see current amount and choose to rename and/or change amount
+  - Add new expenses
+- Allocation is recalculated.
+- Edits are saved as a new version (e.g., editing `name-v1` creates `name-v2`).
+
+## Versioning Rules
+
+- Create flow: You provide a base name (e.g., `my-report`). The app picks the next available version across both text and JSON directories, e.g., `my-report-v1`.
+- Edit flow: The app bumps the current version (`my-report-v1` → `my-report-v2`) and saves the updated accounting under both directories.
+
+## Expense Priorities
+
+- Priorities 1 & 2: Critical / Essential expenses (must be paid first)
+- Priorities 3–5: Discretionary expenses (postponable / comfort / luxury)
 
 ## Project Structure
 
@@ -72,89 +89,33 @@ fincli/
 │   ├── reportService.ts
 │   ├── budgetCalculator.ts
 │   └── types.ts
-├── reports/ (generated reports will be saved here)
-├── expenses.json (initial expense data)
+├── reports/
+│   ├── reports/        # text reports (.txt)
+│   └── json/           # structured reports (.json)
+├── expenses.json        # base expenses (name, priority, tags)
 ├── package.json
 ├── tsconfig.json
-├── .eslintrc.json
 └── README.md
 ```
 
-## Example Run-through
+## Commands
 
-Here's a sample interaction with FinCLI:
+- `npm start`: Run the CLI (TypeScript via ts-node)
+- `npm run build`: Compile to JavaScript (`dist/`)
+- `npm run lint`: Run ESLint
 
-```
-🏦 Welcome to FinCLI - Your Personal Finance Manager
+## Development Notes
 
-? What would you like to do? (Use arrow keys)
-❯ Create a new accounting
-  Edit past accountings
-  Watch the criteria
+- Interactive prompts are powered by `@inquirer/prompts`.
+- File I/O uses Node `fs/promises`.
+- Budget allocation is centralized in `src/budgetCalculator.ts`.
+- Reports are generated via `src/reportService.ts` and now include JSON persistence and versioning.
 
-📊 Creating New Accounting
+## Contributing
 
-? What is your total budget for this month? 5000
-Budget set to: 5,000,000 tomans
+Issues and PRs are welcome. Please keep code readable, typed, and linted.
 
-? Do you have house rent this month? Yes
-? How much is it? 1000
-? Do you have loan installment this month? Yes
-? How much is it? 500
-? Do you have war equipment this month? No
-? Do you have gpt this month? Yes
-? How much is it? 100
-? Do you have tapsi installment this month? No
-? Do you have house charge this month? Yes
-? How much is it? 200
-? Do you have mobile rent this month? Yes
-? How much is it? 50
-? Do you have internet fee this month? Yes
-? How much is it? 30
-? Do you have household expenses this month? Yes
-? How much is it? 300
-? Do you have a new expense to add? Yes
-? What is the name of the expense? New Gadget
-? What is the priority (1-5)? 5
-? Enter tags (comma-separated): tech, fun
-? How much is it? 200
-Added new expense: New Gadget
+## License
 
-? Do you have a new expense to add? No
-? What should we name the output file? july-2025-accounting
-Report saved to: ./reports/july-2025-accounting.txt
-
-✅ Accounting completed successfully!
-```
-
-**Resulting `reports/july-2025-accounting.txt`:**
-
-```
-Monthly Accounting – july-2025-accounting
-Total budget: 5,000,000 tomans
-
-Priority 1 & 2 (Critical / Essential)
--------------------------------------
-• house rent – 1,000,000
-• loan installment – 500,000
-• house charge – 200,000
-• mobile rent – 50,000
-• internet fee – 30,000
-• household expenses – 300,000
-
-Priority 3–5 (Postponable / Comfort / Luxury)
----------------------------------------------
-• gpt – 100,000
-• New Gadget – 200,000
-
-Allocation Summary
-------------------
-Investments (30%): 876,000
-Savings      (20%): 584,000
-Daily use    (50%): 1,460,000  (after other expenses → 1,160,000)
-```
-
-## Architecture Overview
-
-FinCLI follows a modular architecture, separating concerns into distinct services. The `cli.ts` acts as the main entry point, handling user interactions and orchestrating calls to other services. `expenseService.ts` manages loading and saving expense definitions. `reportService.ts` is responsible for generating, listing, reading, and updating accounting reports. `budgetCalculator.ts` encapsulates the logic for allocating the budget based on defined rules. Common interfaces and types are defined in `types.ts` to ensure strong typing and maintainability across the application.
+MIT
 
