@@ -4,6 +4,7 @@ import { select, input, confirm } from "@inquirer/prompts";
 import { ExpenseService } from "./expenseService";
 import { ReportService } from "./reportService";
 import { BudgetCalculator } from "./budgetCalculator";
+import { ConfigService } from "./configService";
 import { Expense, ExpenseWithAmount, MonthlyAccounting } from "./types";
 
 /**
@@ -13,6 +14,8 @@ class FinCLI {
   private expenseService = new ExpenseService();
   private reportService = new ReportService();
   private budgetCalculator = new BudgetCalculator();
+  private configService = new ConfigService();
+  private currentConfig: any = null;
 
   /**
    * Start the application and show welcome screen
@@ -20,11 +23,15 @@ class FinCLI {
   async start(): Promise<void> {
     console.log("\n🏦 Welcome to FinCLI - Your Personal Finance Manager\n");
 
+    // Load configuration
+    this.currentConfig = await this.configService.loadConfig();
+
     const action = await select({
       message: "What would you like to do?",
       choices: [
         { name: "Create a new accounting", value: "create" },
         { name: "Edit past accountings", value: "edit" },
+        { name: "Configure budget allocation", value: "config" },
         { name: "Watch the criteria", value: "criteria" },
       ],
     });
@@ -35,6 +42,9 @@ class FinCLI {
         break;
       case "edit":
         await this.editPastAccountings();
+        break;
+      case "config":
+        await this.configureBudgetAllocation();
         break;
       case "criteria":
         await this.showCriteria();
@@ -144,7 +154,8 @@ class FinCLI {
     // Calculate budget allocation
     const allocation = this.budgetCalculator.calculateAllocation(
       totalBudget,
-      expensesWithAmounts
+      expensesWithAmounts,
+      this.currentConfig.budgetAllocation
     );
 
     // Get output filename base (version will be appended automatically)
@@ -193,7 +204,8 @@ class FinCLI {
     // Recompute allocation to ensure consistency when loaded from legacy text
     accounting.allocation = this.budgetCalculator.calculateAllocation(
       accounting.totalBudget,
-      accounting.expenses
+      accounting.expenses,
+      this.currentConfig.budgetAllocation
     );
 
     // Allow changing total budget first
@@ -292,7 +304,8 @@ class FinCLI {
     // Recompute allocation after edits
     accounting.allocation = this.budgetCalculator.calculateAllocation(
       accounting.totalBudget,
-      accounting.expenses
+      accounting.expenses,
+      this.currentConfig.budgetAllocation
     );
 
     // Bump version for edited accounting and save as new version
@@ -301,6 +314,86 @@ class FinCLI {
     );
     await this.reportService.saveAccounting(accounting);
     console.log(`\n✅ Report updated successfully as: ${accounting.filename} (new version)\n`);
+  }
+
+  /**
+   * Configure budget allocation percentages
+   */
+  private async configureBudgetAllocation(): Promise<void> {
+    console.log("\n⚙️ Configure Budget Allocation\n");
+
+    console.log("Current allocation:");
+    console.log(`  Investments: ${this.currentConfig.budgetAllocation.investments}%`);
+    console.log(`  Savings: ${this.currentConfig.budgetAllocation.savings}%`);
+    console.log(`  Daily Expenses: ${this.currentConfig.budgetAllocation.dailyExpenses}%`);
+    console.log(`  Total: ${this.currentConfig.budgetAllocation.investments + this.currentConfig.budgetAllocation.savings + this.currentConfig.budgetAllocation.dailyExpenses}%\n`);
+
+    const changeConfig = await confirm({
+      message: "Do you want to change the budget allocation percentages?",
+    });
+
+    if (!changeConfig) {
+      console.log("Configuration unchanged.\n");
+      return;
+    }
+
+    let validConfig = false;
+    let newAllocation: any = null;
+
+    while (!validConfig) {
+      const investmentsInput = await input({
+        message: "Enter investments percentage (0-100):",
+        default: String(this.currentConfig.budgetAllocation.investments),
+        validate: (value) => {
+          const num = parseInt(value);
+          return !isNaN(num) && num >= 0 && num <= 100
+            ? true
+            : "Please enter a number between 0 and 100";
+        },
+      });
+
+      const savingsInput = await input({
+        message: "Enter savings percentage (0-100):",
+        default: String(this.currentConfig.budgetAllocation.savings),
+        validate: (value) => {
+          const num = parseInt(value);
+          return !isNaN(num) && num >= 0 && num <= 100
+            ? true
+            : "Please enter a number between 0 and 100";
+        },
+      });
+
+      const dailyExpensesInput = await input({
+        message: "Enter daily expenses percentage (0-100):",
+        default: String(this.currentConfig.budgetAllocation.dailyExpenses),
+        validate: (value) => {
+          const num = parseInt(value);
+          return !isNaN(num) && num >= 0 && num <= 100
+            ? true
+            : "Please enter a number between 0 and 100";
+        },
+      });
+
+      newAllocation = {
+        investments: parseInt(investmentsInput),
+        savings: parseInt(savingsInput),
+        dailyExpenses: parseInt(dailyExpensesInput),
+      };
+
+      if (this.configService.validateAllocation(newAllocation)) {
+        validConfig = true;
+      } else {
+        const total = newAllocation.investments + newAllocation.savings + newAllocation.dailyExpenses;
+        console.log(`\n❌ Error: Percentages must sum to exactly 100%. Current total: ${total}%\n`);
+      }
+    }
+
+    // Update configuration
+    this.currentConfig.budgetAllocation = newAllocation;
+    await this.configService.saveConfig(this.currentConfig);
+
+    console.log("\n✅ Budget allocation updated successfully!");
+    console.log(`New allocation: Investments ${newAllocation!.investments}%, Savings ${newAllocation!.savings}%, Daily Expenses ${newAllocation!.dailyExpenses}%\n`);
   }
 
   /**

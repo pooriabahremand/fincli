@@ -6,7 +6,7 @@ FinCLI is a self-contained command-line interface (CLI) application to manage mo
 
 - Interactive welcome screen with clear actions
 - Create new accounting with dynamic expense input (predefined + custom)
-- Automatic budget allocation (Investments 30%, Savings 20%, Daily 50%)
+- **Configurable budget allocation** - customize percentages for Investments, Savings, and Daily Expenses
 - Generate reports as plain text and structured JSON
 - Edit past accountings interactively:
   - Show current budget when changing budget
@@ -44,7 +44,9 @@ No manual setup is required. The app will create these directories if they don't
 - `./reports/reports` for text reports
 - `./reports/json` for JSON reports
 
-Base expenses are stored in `./expenses.json`.
+Configuration and data files:
+- `./config.json` - budget allocation percentages (auto-created with defaults)
+- `./expenses.json` - base expense definitions
 
 ## Usage Walkthrough
 
@@ -66,8 +68,15 @@ Base expenses are stored in `./expenses.json`.
   - Change total budget (prompt shows current amount)
   - For each expense, see current amount and choose to rename and/or change amount
   - Add new expenses
-- Allocation is recalculated.
+- Allocation is recalculated using current configuration.
 - Edits are saved as a new version (e.g., editing `name-v1` creates `name-v2`).
+
+### Configure budget allocation
+
+- Select "Configure budget allocation" from the main menu.
+- View current percentages (default: Investments 30%, Savings 20%, Daily Expenses 50%).
+- Enter new percentages for each category (must sum to exactly 100%).
+- Configuration is saved to `./config.json` and used for all future calculations.
 
 ## Versioning Rules
 
@@ -88,10 +97,12 @@ fincli/
 │   ├── expenseService.ts
 │   ├── reportService.ts
 │   ├── budgetCalculator.ts
+│   ├── configService.ts
 │   └── types.ts
 ├── reports/
 │   ├── reports/        # text reports (.txt)
 │   └── json/           # structured reports (.json)
+├── config.json         # budget allocation configuration
 ├── expenses.json        # base expenses (name, priority, tags)
 ├── package.json
 ├── tsconfig.json
@@ -108,8 +119,9 @@ fincli/
 
 - Interactive prompts are powered by `@inquirer/prompts`.
 - File I/O uses Node `fs/promises`.
-- Budget allocation is centralized in `src/budgetCalculator.ts`.
-- Reports are generated via `src/reportService.ts` and now include JSON persistence and versioning.
+- Budget allocation is centralized in `src/budgetCalculator.ts` and uses configuration from `src/configService.ts`.
+- Reports are generated via `src/reportService.ts` and include JSON persistence and versioning.
+- Configuration is managed by `src/configService.ts` with validation to ensure percentages sum to 100%.
 
 ## Contributing
 

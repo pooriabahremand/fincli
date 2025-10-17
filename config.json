@@ -1,0 +1,9 @@
+{
+  "budgetAllocation": {
+    "investments": 30,
+    "savings": 20,
+    "dailyExpenses": 50
+  },
+  "version": "1.0.0",
+  "description": "Budget allocation percentages for FinCLI"
+}
